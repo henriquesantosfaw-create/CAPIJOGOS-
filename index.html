@@ -84,6 +84,7 @@ body[data-mode="bunny"] .pad div .key{opacity:.35}
 
 html,body{overscroll-behavior:none;touch-action:manipulation}
 body.menu .pad{visibility:hidden}
+body.menu .hud{visibility:hidden}
 .turn{display:none;font-size:14px;color:var(--mut);text-align:center;margin:0}
 @media (pointer:coarse),(max-width:900px){
 .tip{display:none}
@@ -93,7 +94,21 @@ body.menu .pad{visibility:hidden}
 @media (pointer:coarse) and (orientation:portrait),(max-width:700px) and (orientation:portrait){
 body{min-height:100dvh;display:flex;flex-direction:column}
 main{flex-grow:1;width:100%}
-.pad{margin-top:auto;padding:8px 6px 14px}
+.pad{flex-grow:1;align-items:center;padding:8px 6px 14px}
+.key{width:96px;height:96px}
+.key.jump{width:132px;height:108px;font-size:13px}
+.over{position:fixed;inset:0;z-index:10;background:var(--bg);gap:20px;padding:calc(20px + env(safe-area-inset-top,0px)) 18px calc(20px + env(safe-area-inset-bottom,0px))}
+.over h1{font-size:clamp(20px,6.4vw,30px)}
+.over p{font-size:17px}
+.pvs canvas{width:52px;height:52px}
+.play{min-height:60px;font-size:15px;padding:0 30px}
+.gm{grid-template-columns:1fr}
+.gm button{min-height:84px}
+.gm canvas{flex-basis:56px;width:56px;height:56px}
+.gm strong{font-size:17px}
+.gm small{font-size:14px}
+.lv button{min-height:72px;font-size:15px}
+.ch button{width:92px;min-height:96px;font-size:13px}
 .turn{display:block}
 }
 @media (pointer:coarse) and (orientation:landscape),(max-height:520px) and (orientation:landscape){
