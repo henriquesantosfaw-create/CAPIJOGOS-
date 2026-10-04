@@ -22,7 +22,7 @@ header{display:flex;align-items:center;justify-content:space-between;gap:12px;pa
 .hud{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:6px 14px;font-size:10px}
 .hud b{color:var(--y);font-weight:400}
 main{max-width:980px;margin:0 auto;padding:0 12px 20px;display:flex;flex-direction:column;gap:12px}
-.frame{position:relative;border:4px solid var(--line);border-radius:10px;overflow:hidden;background:#6EC6FF;line-height:0}
+.frame{position:relative;aspect-ratio:auto;border:4px solid var(--line);border-radius:10px;overflow:hidden;background:#6EC6FF;line-height:0}
 canvas{display:block;width:100%;height:auto;image-rendering:pixelated;image-rendering:crisp-edges}
 .over{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;background:rgba(20,33,61,.82);text-align:center;padding:16px;line-height:1.6}
 .over h1{margin:0;font-size:clamp(16px,4.5vw,28px);color:var(--y);font-weight:400}
@@ -94,7 +94,11 @@ body.menu .hud{visibility:hidden}
 @media (pointer:coarse) and (orientation:portrait),(max-width:700px) and (orientation:portrait){
 body{min-height:100dvh;display:flex;flex-direction:column}
 main{flex-grow:1;width:100%}
-.pad{flex-grow:1;align-items:center;padding:8px 6px 14px}
+.frame{flex:0 0 auto;width:100%;aspect-ratio:1/1;max-height:62dvh}
+.frame>canvas{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
+.pad{flex:1 1 auto;align-items:center;padding:10px 6px 6px}
+.credit.foot,.turn{display:none!important}
+header{padding:8px 12px}
 .key{width:96px;height:96px}
 .key.jump{width:132px;height:108px;font-size:13px}
 .over{position:fixed;inset:0;z-index:10;background:var(--bg);gap:20px;padding:calc(20px + env(safe-area-inset-top,0px)) 18px calc(20px + env(safe-area-inset-bottom,0px))}
@@ -119,7 +123,7 @@ header{position:fixed;top:0;left:0;right:0;z-index:3;max-width:none;padding:calc
 .hud{justify-content:center;gap:4px 16px;font-size:9px;text-shadow:1px 1px 0 #14213D,-1px 1px 0 #14213D,1px -1px 0 #14213D,-1px -1px 0 #14213D}
 main{max-width:none;padding:0;height:100dvh;gap:0}
 .frame{border:0;border-radius:0;height:100dvh;display:flex;justify-content:center;background:#0B1326}
-canvas{height:100%;width:auto;max-width:100%;object-fit:contain}
+.frame>canvas{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
 .pad{position:fixed;left:0;right:0;bottom:0;z-index:4;padding:0 calc(14px + env(safe-area-inset-right,0px)) calc(12px + env(safe-area-inset-bottom,0px)) calc(14px + env(safe-area-inset-left,0px));pointer-events:none}
 .pad .key{pointer-events:auto;opacity:.55;width:76px;height:76px}
 .pad .key.jump{width:104px;height:84px}
@@ -162,7 +166,8 @@ canvas{height:100%;width:auto;max-width:100%;object-fit:contain}
 </main>
 <script>
 (() => {
-const T = 16, H = 13, VW = 384, VH = 208, NL = 6;
+const T = 16, H = 13, VH = 208, NL = 6;
+let VW = 384;
 const cv = document.getElementById('c'), g = cv.getContext('2d');
 g.imageSmoothingEnabled = false;
 const $ = (id) => document.getElementById(id);
@@ -378,7 +383,7 @@ function draw() {
   for (let i = 0; i < 9; i++) { const x = ((i * 190 - cam * 0.2) % (VW + 200) + VW + 200) % (VW + 200) - 100; rect(x, 30 + (i % 3) * 22, 36, 10, th.cloud); rect(x + 8, 24 + (i % 3) * 22, 20, 8, th.cloud); }
   for (let i = 0; i < 8; i++) { const x = ((i * 150 - cam * 0.45) % (VW + 240) + VW + 240) % (VW + 240) - 120; const hh = 40 + (i % 3) * 16; g.fillStyle = th.hill; g.beginPath(); g.moveTo(x, 176); g.lineTo(x + 50, 176 - hh); g.lineTo(x + 100, 176); g.fill(); }
   const c0 = Math.floor(cam / T), ox = -Math.round(cam), bob = frames >> 4 & 1;
-  for (let r = 0; r < H; r++) for (let c = c0; c <= c0 + 25; c++) {
+  for (let r = 0; r < H; r++) for (let c = c0; c <= c0 + Math.ceil(VW / T) + 1; c++) {
     if (c < 0 || c >= W) continue;
     const t = map[r][c], x = c * T + ox, y = r * T;
     if (t === ' ') continue;
@@ -427,21 +432,24 @@ function drawCar(ctx, x, y, col) {
   r(x - 2, y + 3, 2, 7, DK); r(x + 18, y + 3, 2, 7, DK); r(x - 2, y + 18, 2, 7, DK); r(x + 18, y + 18, 2, 7, DK);
   r(x, y, 18, 28, col); r(x + 2, y + 5, 14, 6, '#BFE6FF'); r(x + 2, y + 19, 14, 4, '#9CC3DE'); r(x + 2, y + 1, 3, 2, '#FFF2B0'); r(x + 13, y + 1, 3, 2, '#FFF2B0');
 }
+const road = () => { const lw = Math.min(60, (VW - 16) / 4); return { l: (VW - lw * 4) / 2, lw }; };
 MINI.car = {
-  init: () => ({ x: 183, hop: 0, cd: 0, lives: 3, inv: 0, sp: 2, obs: [], next: 50, d: 0 }),
+  init: () => ({ x: VW / 2 - 9, hop: 0, cd: 0, lives: 3, inv: 0, sp: 2, obs: [], next: 50, d: 0 }),
   step() {
+    const R = road();
     frames++; M.sp = Math.min(5.2, 2 + frames * 0.0007); M.d += M.sp;
-    if (keys.l) M.x -= 3; if (keys.r) M.x += 3; M.x = Math.max(74, Math.min(292, M.x));
+    if (keys.l) M.x -= 3; if (keys.r) M.x += 3; M.x = Math.max(R.l + 2, Math.min(R.l + R.lw * 4 - 20, M.x));
     if (keys.j && !pj && M.cd <= 0) { M.hop = 34; M.cd = 150; beep(520, 0.1); }
     pj = keys.j; if (M.hop > 0) M.hop--; if (M.cd > 0) M.cd--; if (M.inv > 0) M.inv--;
     score += M.sp * 0.02;
     if (--M.next <= 0) {
-      const lane = Math.floor(Math.random() * 4), x = 72 + lane * 60 + 21;
-      if (Math.random() < 0.3) for (let i = 0; i < 3; i++) M.obs.push({ x: x + 5, y: -12 - i * 16, t: 'coin', w: 8, h: 8 });
-      else M.obs.push({ x, y: -34, t: 'car', w: 18, h: 28, c: ['#FF5D5D', '#4DA3FF', '#B08CF2', '#F4F4F4', '#FF9F43'][Math.floor(Math.random() * 5)] });
+      const lane = Math.floor(Math.random() * 4);
+      if (Math.random() < 0.3) for (let i = 0; i < 3; i++) M.obs.push({ lane, y: -12 - i * 16, t: 'coin', w: 8, h: 8 });
+      else M.obs.push({ lane, y: -34, t: 'car', w: 18, h: 28, c: ['#FF5D5D', '#4DA3FF', '#B08CF2', '#F4F4F4', '#FF9F43'][Math.floor(Math.random() * 5)] });
       M.next = Math.max(18, 46 - frames * 0.004);
     }
     for (const o of M.obs) {
+      o.x = R.l + o.lane * R.lw + (R.lw - o.w) / 2;
       o.y += o.t === 'car' ? M.sp * 0.75 : M.sp;
       if (!hit(M.x, 166, 18, 28, o.x, o.y, o.w, o.h)) continue;
       if (o.t === 'coin') { o.gone = true; score += 10; beep(1319, 0.05); }
@@ -450,27 +458,28 @@ MINI.car = {
     M.obs = M.obs.filter((o) => !o.gone && o.y < 230);
   },
   draw() {
-    rect(0, 0, VW, VH, '#3BCB6B'); rect(72, 0, 240, VH, '#4A5266'); rect(72, 0, 3, VH, '#F4F4F4'); rect(309, 0, 3, VH, '#F4F4F4');
+    const R = road(), rw = R.lw * 4;
+    rect(0, 0, VW, VH, '#3BCB6B'); rect(R.l, 0, rw, VH, '#4A5266'); rect(R.l, 0, 3, VH, '#F4F4F4'); rect(R.l + rw - 3, 0, 3, VH, '#F4F4F4');
     const off = M.d % 32;
-    [132, 192, 252].forEach((x) => { for (let y = -32 + off; y < VH; y += 32) rect(x - 1, y, 2, 16, '#C9D4EA'); });
-    for (let i = 0; i < 5; i++) { const y = ((i * 60 + M.d) % 300) - 40; [22, 338].forEach((x, k) => { rect(x + 8 + k * 6, y + 14, 4, 10, '#7A4A21'); rect(x + k * 6, y, 20, 16, '#1E8A43'); rect(x + 4 + k * 6, y - 4, 12, 6, '#1E8A43'); }); }
-    M.obs.forEach((o) => { if (o.t === 'coin') { rect(o.x, o.y, 8, 8, '#FFD23F'); rect(o.x + 1, o.y + 1, 1, 6, '#FFF2B0'); } else drawCar(g, o.x, o.y, o.c); });
+    [1, 2, 3].forEach((k) => { for (let y = -32 + off; y < VH; y += 32) rect(R.l + k * R.lw - 1, y, 2, 16, '#C9D4EA'); });
+    if (R.l >= 40) for (let i = 0; i < 5; i++) { const y = ((i * 60 + M.d) % 300) - 40; [R.l - 34, R.l + rw + 14].forEach((x) => { rect(x + 8, y + 14, 4, 10, '#7A4A21'); rect(x, y, 20, 16, '#1E8A43'); rect(x + 4, y - 4, 12, 6, '#1E8A43'); }); }
+    M.obs.forEach((o) => { if (o.x === undefined) return; if (o.t === 'coin') { rect(o.x, o.y, 8, 8, '#FFD23F'); rect(o.x + 1, o.y + 1, 1, 6, '#FFF2B0'); } else drawCar(g, o.x, o.y, o.c); });
     if (!(M.inv && (frames >> 2) & 1)) { if (M.hop) { rect(M.x + 2, 174, 18, 24, 'rgba(20,33,61,0.35)'); drawCar(g, M.x, 166 - Math.sin(M.hop / 34 * Math.PI) * 14, '#FFD23F'); } else drawCar(g, M.x, 166, '#FFD23F'); }
     rect(8, 196, 42, 6, '#14213D'); rect(9, 197, 40 * (1 - M.cd / 150), 4, M.cd ? '#9AA5BD' : '#3BCB6B');
-    tip('PULAR salta um carro. A barra mostra a recarga.');
+    tip('PULAR salta por cima de um carro.');
   }
 };
 MINI.monkey = {
-  init: () => ({ x: 180, y: 156, vy: 0, on: true, dir: 1, lives: 3, inv: 0, its: [], next: 30, combo: 0 }),
+  init: () => ({ x: VW / 2 - 12, y: 156, vy: 0, on: true, dir: 1, lives: 3, inv: 0, its: [], next: 30, combo: 0 }),
   step() {
     frames++;
-    if (keys.l) { M.x -= 3.2; M.dir = -1; } if (keys.r) { M.x += 3.2; M.dir = 1; } M.x = Math.max(0, Math.min(360, M.x));
+    if (keys.l) { M.x -= 3.2; M.dir = -1; } if (keys.r) { M.x += 3.2; M.dir = 1; } M.x = Math.max(0, Math.min(VW - 24, M.x));
     if (keys.j && !pj && M.on) { M.vy = -6.5; beep(520, 0.07); } pj = keys.j;
     M.vy += 0.35; M.y += M.vy; if (M.y >= 156) { M.y = 156; M.vy = 0; M.on = true; } else M.on = false;
     if (M.inv > 0) M.inv--;
     if (--M.next <= 0) {
       const r = Math.random(), t = r < Math.min(0.45, 0.15 + frames * 0.00012) ? 'coco' : r > 0.95 ? 'gold' : 'ban';
-      M.its.push({ x: 8 + Math.random() * 360, y: -12, vy: 1.2 + Math.random() * 0.8 + frames * 0.0003, t });
+      M.its.push({ x: 8 + Math.random() * (VW - 28), y: -12, vy: 1.2 + Math.random() * 0.8 + frames * 0.0003, t });
       M.next = Math.max(14, 48 - frames * 0.006);
     }
     for (const o of M.its) {
@@ -486,7 +495,7 @@ MINI.monkey = {
   },
   draw() {
     rect(0, 0, VW, VH, '#8FD8FF');
-    for (let i = 0; i < 6; i++) { const x = 20 + i * 68; rect(x + 8, 60, 6, 124, '#7A4A21'); rect(x - 10, 46, 42, 10, '#1E8A43'); rect(x - 2, 38, 26, 10, '#3BCB6B'); rect(x - 14, 54, 14, 6, '#1E8A43'); rect(x + 22, 54, 14, 6, '#1E8A43'); }
+    for (let i = 0; i < 7; i++) { const x = 20 + i * 68; rect(x + 8, 60, 6, 124, '#7A4A21'); rect(x - 10, 46, 42, 10, '#1E8A43'); rect(x - 2, 38, 26, 10, '#3BCB6B'); rect(x - 14, 54, 14, 6, '#1E8A43'); rect(x + 22, 54, 14, 6, '#1E8A43'); }
     rect(0, 184, VW, 24, '#A8622D'); rect(0, 184, VW, 5, '#3BCB6B'); rect(0, 189, VW, 1, '#1E8A43');
     M.its.forEach((o) => {
       if (o.t === 'coco') { rect(o.x, o.y + 1, 10, 8, '#6B4420'); rect(o.x + 1, o.y, 8, 10, '#6B4420'); rect(o.x + 3, o.y + 3, 1, 1, DK); rect(o.x + 6, o.y + 3, 1, 1, DK); rect(o.x + 4, o.y + 6, 2, 1, DK); }
@@ -496,27 +505,28 @@ MINI.monkey = {
     g.font = '8px monospace'; g.textBaseline = 'top';
     fx.forEach((e) => { g.fillStyle = '#14213D'; g.fillText(e.txt, Math.round(e.x) + 1, Math.round(e.y) + 1); g.fillStyle = '#FFFFFF'; g.fillText(e.txt, Math.round(e.x), Math.round(e.y)); });
     if (M.combo >= 5) { g.fillStyle = '#14213D'; g.fillText('COMBO x' + (1 + Math.floor(M.combo / 5)), 8, 196); }
-    tip('Pegue as bananas e fuja dos cocos.');
+    tip('Pegue bananas, fuja dos cocos.');
   }
 };
 MINI.bunny = {
   init: () => ({ y: 148, vy: 0, on: true, dj: false, sp: 2.4, obs: [], car: [], next: 120, d: 0 }),
   step() {
-    frames++; M.sp = Math.min(6, 2.4 + frames * 0.0009); M.d += M.sp; score += M.sp * 0.03;
+    const BX = VW < 300 ? 36 : 56;
+    frames++; M.sp = Math.min(VW < 300 ? 4.6 : 6, 2.4 + frames * 0.0009); M.d += M.sp; score += M.sp * 0.03;
     if (keys.j && !pj) { if (M.on) { M.vy = -6.8; beep(520, 0.07); } else if (!M.dj) { M.vy = -5.8; M.dj = true; beep(700, 0.07); } }
     pj = keys.j; if (!keys.j && M.vy < -2.5) M.vy = -2.5;
     M.vy += 0.35; M.y += M.vy; if (M.y >= 148) { M.y = 148; M.vy = 0; M.on = true; M.dj = false; } else M.on = false;
     M.next -= M.sp;
     if (M.next <= 0) {
       const r = Math.random();
-      if (r < 0.45) M.obs.push({ x: 400, y: 160, w: 10, h: 16, t: 'fence' });
-      else if (r < 0.75) M.obs.push({ x: 400, y: 164, w: 24, h: 12, t: 'bush' });
-      else M.obs.push({ x: 400, y: 126, w: 16, h: 10, t: 'bird' });
-      if (Math.random() < 0.7) { const hy = r >= 0.75 ? 166 : 118 + Math.random() * 20; for (let i = 0; i < 3; i++) M.car.push({ x: 400 + (r >= 0.75 ? 30 : -8) + i * 14, y: hy }); }
+      if (r < 0.45) M.obs.push({ x: VW + 16, y: 160, w: 10, h: 16, t: 'fence' });
+      else if (r < 0.75) M.obs.push({ x: VW + 16, y: 164, w: 24, h: 12, t: 'bush' });
+      else M.obs.push({ x: VW + 16, y: 126, w: 16, h: 10, t: 'bird' });
+      if (Math.random() < 0.7) { const hy = r >= 0.75 ? 166 : 118 + Math.random() * 20; for (let i = 0; i < 3; i++) M.car.push({ x: VW + 16 + (r >= 0.75 ? 30 : -8) + i * 14, y: hy }); }
       M.next = 110 + Math.random() * 120 + M.sp * 22;
     }
-    for (const o of M.obs) { o.x -= M.sp * (o.t === 'bird' ? 1.25 : 1); if (hit(60, M.y + 4, 16, 22, o.x + 1, o.y + 1, o.w - 2, o.h - 2)) { beep(160, 0.3); return miniOver(); } }
-    for (const c of M.car) { c.x -= M.sp; if (hit(56, M.y, 24, 28, c.x, c.y, 8, 10)) { c.gone = true; score += 10; beep(1319, 0.05); } }
+    for (const o of M.obs) { o.x -= M.sp * (o.t === 'bird' ? 1.25 : 1); if (hit(BX + 4, M.y + 4, 16, 22, o.x + 1, o.y + 1, o.w - 2, o.h - 2)) { beep(160, 0.3); return miniOver(); } }
+    for (const c of M.car) { c.x -= M.sp; if (hit(BX, M.y, 24, 28, c.x, c.y, 8, 10)) { c.gone = true; score += 10; beep(1319, 0.05); } }
     M.obs = M.obs.filter((o) => o.x > -40); M.car = M.car.filter((c) => !c.gone && c.x > -20);
   },
   draw() {
@@ -531,11 +541,11 @@ MINI.bunny = {
       else if (o.t === 'bush') { rect(o.x, o.y + 4, 24, 8, '#1E8A43'); rect(o.x + 3, o.y, 18, 6, '#1E8A43'); rect(o.x + 5, o.y + 3, 2, 2, '#FF5D5D'); rect(o.x + 15, o.y + 6, 2, 2, '#FF5D5D'); }
       else { const b = (frames >> 3) & 1; rect(o.x, o.y + 3, 16, 6, '#FF7AA8'); rect(o.x - 3, o.y + 5, 4, 2, '#FFD23F'); rect(o.x + 5, o.y - 3 + b * 8, 7, 4, '#FFB3CC'); rect(o.x + 2, o.y + 4, 2, 2, DK); }
     });
-    big(CHARS[3], 56, M.y, 1, M.on ? (frames >> 2) & 1 : 0, M.on, false);
-    tip('PULAR no chão e de novo no ar. Passe por baixo dos pássaros.');
+    big(CHARS[3], VW < 300 ? 36 : 56, M.y, 1, M.on ? (frames >> 2) & 1 : 0, M.on, false);
+    tip('Pule cercas. Fique no chão sob pássaros.');
   }
 };
-function miniStart(m) { mode = m; M = MINI[m].init(); fx = []; frames = 0; score = 0; pj = true; state = 'play'; document.body.dataset.mode = m; over.classList.add('hidden'); beep(660, 0.05); }
+function miniStart(m) { fit(); mode = m; M = MINI[m].init(); fx = []; frames = 0; score = 0; pj = true; state = 'play'; document.body.dataset.mode = m; over.classList.add('hidden'); beep(660, 0.05); }
 function miniOver() {
   state = 'over'; const sc = Math.floor(score), old = save.hi[mode] || 0, rec = sc > old;
   if (rec) { save.hi[mode] = sc; persist(); }
@@ -608,6 +618,7 @@ function screenOver() {
   over.classList.remove('hidden');
 }
 function start(lv) {
+  fit();
   mode = 'plat'; document.body.dataset.mode = 'plat';
   L = lv; th = THEMES[L]; gen(L); p = null; spawn(); cam = 0;
   coinsGot = 0; lives = 3; frames = 0; score = 0; deaths = 0; combo = 0;
@@ -624,6 +635,13 @@ over.addEventListener('click', (e) => {
   if (b.dataset.home) { screenWelcome(); return; }
   if (b.dataset.hub) screenHub(); else if (b.dataset.game) { if (b.dataset.game === 'plat') { mode = 'plat'; screenMenu(); } else miniStart(b.dataset.game); } else if (b.dataset.ch !== undefined) { save.char = +b.dataset.ch; persist(); beep(880, 0.05); screenMenu(); } else if (b.dataset.menu) screenMenu(); else if (b.dataset.lv !== undefined) start(+b.dataset.lv);
 });
+const frameEl = cv.parentElement;
+function fit() {
+  const r = frameEl.getBoundingClientRect(); if (!r.width || !r.height) return;
+  const w = Math.max(208, Math.min(464, Math.round(VH * r.width / r.height / 2) * 2));
+  if (w !== VW) { VW = w; cv.width = w; g.imageSmoothingEnabled = false; }
+}
+addEventListener('resize', fit); addEventListener('orientationchange', () => setTimeout(fit, 250));
 let last = 0, accum = 0, lastHud = '';
 function loop(ts) {
   accum += Math.min(100, ts - last); last = ts;
@@ -646,6 +664,7 @@ addEventListener('blur', () => { keys.l = keys.r = keys.j = false; });
 if (typeof window !== 'undefined') window.__capi = { gen, get: () => ({ W, map, coinsTotal, foes: foes.length }) };
 cv.addEventListener('pointerdown', (e) => { e.preventDefault(); keys.j = true; });
 ['pointerup', 'pointercancel', 'pointerleave'].forEach((ev) => cv.addEventListener(ev, () => { keys.j = false; }));
+fit(); setTimeout(fit, 300);
 gen(0); spawn(); cam = 0; screenWelcome(); requestAnimationFrame(loop);
 })();
 </script>
